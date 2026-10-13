@@ -75,6 +75,14 @@ function reveal(){
   els.actionBtn.setAttribute("aria-label","Volgende plaatje");
   sound();
 }
+const BOOK_TURN_RATE=1.75;
+function resetBookVideoSpeed(){
+  const video=els.turnVideo;
+  video.pause();
+  video.defaultPlaybackRate=1;
+  video.playbackRate=1;
+}
+window.addEventListener("pagehide",resetBookVideoSpeed);
 async function turn(){
   if(state.turning)return;
   state.turning=true;
@@ -86,13 +94,18 @@ async function turn(){
   els.turnLayer.classList.remove("hidden");
   const v=els.turnVideo;
   try{
-    v.pause();v.currentTime=0;v.playbackRate=1.75;
+    v.pause();
+    v.defaultPlaybackRate=1;
+    v.playbackRate=1;
+    v.currentTime=0;
+    v.playbackRate=BOOK_TURN_RATE;
     await Promise.race([
       new Promise(resolve=>{v.onended=resolve;const p=v.play();if(p&&typeof p.catch==="function")p.catch(resolve)}),
       new Promise(resolve=>setTimeout(resolve,4500))
     ]);
   }catch(e){}finally{
-    v.pause();
+    resetBookVideoSpeed();
+    v.onended=null;
     state.index++;
     const loaded=await preload;
     // De oude inhoud blijft verborgen tot het omslaan afgelopen is.
@@ -108,4 +121,5 @@ $("homeBtn").onclick=()=>{if(state.turning)return;++imageRequest;concealPicture(
 $("againBtn").onclick=()=>view("start");
 $("startBtn").onclick=prepare;
 document.addEventListener("keydown",e=>{if(e.target.matches("input,select,button"))return;if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();if(!els.actionBtn.classList.contains("hidden"))els.actionBtn.click()}if(e.key==="ArrowLeft")$("backBtn").click()});
+resetBookVideoSpeed();
 renderChoices();updateMode();view("start");
